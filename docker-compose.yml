@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: nexus-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-supersecretnexuskey_change_me_in_production_123456789}
+      - ENFORCE_LAN_ONLY=${ENFORCE_LAN_ONLY:-false}
+      - ALLOWED_LAN_SUBNETS=${ALLOWED_LAN_SUBNETS:-127.0.0.1/32,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1/128}
+      - PORTAINER_URL=${PORTAINER_URL:-http://localhost:9000}
+      - PORTAINER_API_TOKEN=${PORTAINER_API_TOKEN:-}
+      - PORTAINER_ENDPOINT_ID=${PORTAINER_ENDPOINT_ID:-1}
+    volumes:
+      - nexus-data:/app/data
+      - /var/backups/nexus:/var/backups/nexus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: nexus-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  nexus-data:
